@@ -32,7 +32,7 @@ const (
 )
 
 var regimes = map[string]struct{}{
-	"positive_gamma": {}, "negative_gamma": {}, "transition": {},
+	"positive_gamma": {}, "negative_gamma": {}, "neutral": {}, "undetermined": {},
 }
 
 // ── coverage ────────────────────────────────────────────────────────────────
@@ -161,11 +161,27 @@ func TestIntegrationOptionQuoteAllFilters(t *testing.T) {
 
 // ── exposure ────────────────────────────────────────────────────────────────
 
+// TestIntegrationExposureSummary: every field declared in ExposureSummaryResponse
+// must be referenced by at least one assertion.
 func TestIntegrationExposureSummary(t *testing.T) {
 	c, ctx := integrationClient(t)
 	s, err := c.ExposureSummary(ctx, "SPY", spyAt)
 	if err != nil {
 		t.Fatal(err)
+	}
+	// ── top-level scalars ──
+	if sym, _ := s["symbol"].(string); sym != "SPY" {
+		t.Errorf("symbol=%q, want SPY", sym)
+	}
+	if _, ok := s["underlying_price"].(float64); !ok {
+		t.Errorf("underlying_price missing/non-number: %v", s["underlying_price"])
+	}
+	asOf, _ := s["as_of"].(string)
+	if asOf == "" {
+		t.Errorf("as_of missing/empty: %v", s["as_of"])
+	}
+	if asOf != spyAt {
+		t.Errorf("as_of=%q, want %q (historical snaps to requested minute)", asOf, spyAt)
 	}
 	regime, _ := s["regime"].(string)
 	if _, ok := regimes[regime]; !ok {
@@ -174,19 +190,72 @@ func TestIntegrationExposureSummary(t *testing.T) {
 	if _, ok := s["gamma_flip"].(float64); !ok {
 		t.Errorf("gamma_flip missing/non-number: %v", s["gamma_flip"])
 	}
+	// ── exposures block (4 fields) ──
 	exp, _ := s["exposures"].(map[string]interface{})
 	for _, k := range []string{"net_gex", "net_dex", "net_vex", "net_chex"} {
 		if _, ok := exp[k].(float64); !ok {
 			t.Errorf("exposures.%s missing/non-number", k)
 		}
 	}
+	// ── interpretation block (3 fields) ──
+	interp, _ := s["interpretation"].(map[string]interface{})
+	for _, k := range []string{"gamma", "vanna", "charm"} {
+		v, ok := interp[k].(string)
+		if !ok || v == "" {
+			t.Errorf("interpretation.%s missing/empty", k)
+		}
+	}
+	// ── hedging_estimate (every leaf on both sides) ──
 	hedging, _ := s["hedging_estimate"].(map[string]interface{})
-	up, _ := hedging["spot_up_1pct"].(map[string]interface{})
-	dn, _ := hedging["spot_down_1pct"].(map[string]interface{})
+	for _, sideKey := range []string{"spot_up_1pct", "spot_down_1pct"} {
+		side, _ := hedging[sideKey].(map[string]interface{})
+		dir, _ := side["direction"].(string)
+		if dir != "buy" && dir != "sell" {
+			t.Errorf("%s.direction=%q, want buy/sell", sideKey, dir)
+		}
+		if _, ok := side["dealer_shares_to_trade"].(float64); !ok {
+			t.Errorf("%s.dealer_shares_to_trade missing/non-number", sideKey)
+		}
+		notional, ok := side["notional_usd"].(float64)
+		if !ok {
+			t.Errorf("%s.notional_usd missing/non-number", sideKey)
+		}
+		if notional == 0 {
+			t.Errorf("%s.notional_usd is zero", sideKey)
+		}
+	}
+	up := hedging["spot_up_1pct"].(map[string]interface{})
+	dn := hedging["spot_down_1pct"].(map[string]interface{})
 	upShares, _ := up["dealer_shares_to_trade"].(float64)
 	dnShares, _ := dn["dealer_shares_to_trade"].(float64)
 	if upShares != -dnShares {
 		t.Errorf("hedging not symmetric: up=%v down=%v", upShares, dnShares)
+	}
+	// ── zero_dte block (3 fields) ──
+	z, ok := s["zero_dte"].(map[string]interface{})
+	if !ok {
+		t.Fatal("zero_dte block missing or wrong type")
+	}
+	if _, present := z["net_gex"]; !present {
+		t.Error("zero_dte.net_gex key missing")
+	} else if v := z["net_gex"]; v != nil {
+		if _, ok := v.(float64); !ok {
+			t.Errorf("zero_dte.net_gex non-number: %T", v)
+		}
+	}
+	if _, present := z["pct_of_total_gex"]; !present {
+		t.Error("zero_dte.pct_of_total_gex key missing")
+	} else if v := z["pct_of_total_gex"]; v != nil {
+		if _, ok := v.(float64); !ok {
+			t.Errorf("zero_dte.pct_of_total_gex non-number: %T", v)
+		}
+	}
+	if _, present := z["expiration"]; !present {
+		t.Error("zero_dte.expiration key missing")
+	} else if v := z["expiration"]; v != nil {
+		if _, ok := v.(string); !ok {
+			t.Errorf("zero_dte.expiration non-string: %T", v)
+		}
 	}
 }
 
