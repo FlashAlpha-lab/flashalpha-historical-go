@@ -447,22 +447,145 @@ func TestIntegrationSurface(t *testing.T) {
 
 // ── vrp ─────────────────────────────────────────────────────────────────────
 
+// TestIntegrationVrp — every field declared in VrpResponse must be referenced.
+// Mirrors the 100% field-coverage discipline used for ExposureSummary.
 func TestIntegrationVrp(t *testing.T) {
 	c, ctx := integrationClient(t)
 	v, err := c.Vrp(ctx, "SPY", spyAt)
 	if err != nil {
 		t.Fatal(err)
 	}
-	core, _ := v["vrp"].(map[string]interface{})
-	for _, k := range []string{"atm_iv", "rv_5d", "rv_10d", "rv_20d", "rv_30d",
-		"vrp_5d", "vrp_10d", "vrp_20d", "vrp_30d"} {
-		if _, ok := core[k]; !ok {
-			t.Errorf("vrp.%s missing", k)
+
+	// ── top-level scalars ──
+	if v["symbol"] != "SPY" {
+		t.Errorf("symbol=%v", v["symbol"])
+	}
+	if _, ok := v["underlying_price"].(float64); !ok {
+		t.Errorf("underlying_price missing/non-number")
+	}
+	if asOf, _ := v["as_of"].(string); asOf == "" {
+		t.Errorf("as_of empty")
+	}
+	if _, ok := v["market_open"].(bool); !ok {
+		t.Errorf("market_open non-bool")
+	}
+	for _, k := range []string{"variance_risk_premium", "convexity_premium", "fair_vol"} {
+		if _, ok := v[k].(float64); !ok {
+			t.Errorf("%s missing/non-number", k)
 		}
 	}
+	if _, ok := v["warnings"].([]interface{}); !ok {
+		t.Errorf("warnings missing/non-array")
+	}
+	// strategy_scores / net_harvest_score / dealer_flow_risk: nullable on hist
+	if _, present := v["strategy_scores"]; !present {
+		t.Error("strategy_scores key missing")
+	}
+	if _, present := v["net_harvest_score"]; !present {
+		t.Error("net_harvest_score key missing")
+	}
+	if _, present := v["dealer_flow_risk"]; !present {
+		t.Error("dealer_flow_risk key missing")
+	}
+	// Customer trap: net_gex must NOT be top-level
+	if _, ok := v["net_gex"]; ok {
+		t.Error("net_gex must NOT be top-level on vrp endpoint")
+	}
+
+	// ── vrp.* core block ──
+	core, ok := v["vrp"].(map[string]interface{})
+	if !ok {
+		t.Fatal("vrp block missing")
+	}
+	for _, k := range []string{"atm_iv", "rv_5d", "rv_10d", "rv_20d", "rv_30d",
+		"vrp_5d", "vrp_10d", "vrp_20d", "vrp_30d"} {
+		if _, ok := core[k].(float64); !ok {
+			t.Errorf("vrp.%s missing/non-number", k)
+		}
+	}
+	// z_score / percentile nullable on historical
+	if _, present := core["z_score"]; !present {
+		t.Error("vrp.z_score key missing")
+	}
+	if _, present := core["percentile"]; !present {
+		t.Error("vrp.percentile key missing")
+	}
+	if _, ok := core["history_days"].(float64); !ok {
+		t.Error("vrp.history_days missing/non-number")
+	}
+
+	// ── directional ──
+	dir, _ := v["directional"].(map[string]interface{})
+	for _, k := range []string{"put_wing_iv_25d", "call_wing_iv_25d",
+		"downside_rv_20d", "upside_rv_20d", "downside_vrp", "upside_vrp"} {
+		if _, ok := dir[k].(float64); !ok {
+			t.Errorf("directional.%s missing/non-number", k)
+		}
+	}
+	if _, ok := dir["put_vrp"]; ok {
+		t.Error("directional.put_vrp must NOT exist")
+	}
+	if _, ok := dir["call_vrp"]; ok {
+		t.Error("directional.call_vrp must NOT exist")
+	}
+
+	// ── term_vrp[] ──
+	term, ok := v["term_vrp"].([]interface{})
+	if !ok || len(term) == 0 {
+		t.Fatal("term_vrp empty/missing")
+	}
+	first, _ := term[0].(map[string]interface{})
+	for _, k := range []string{"dte", "iv", "rv", "vrp"} {
+		if _, present := first[k]; !present {
+			t.Errorf("term_vrp[0].%s missing", k)
+		}
+	}
+
+	// ── gex_conditioned + vanna_conditioned ──
+	gc, _ := v["gex_conditioned"].(map[string]interface{})
+	if _, ok := gc["regime"].(string); !ok {
+		t.Error("gex_conditioned.regime missing")
+	}
+	if _, ok := gc["harvest_score"].(float64); !ok {
+		t.Error("gex_conditioned.harvest_score missing")
+	}
+	if _, ok := gc["interpretation"].(string); !ok {
+		t.Error("gex_conditioned.interpretation missing")
+	}
+	vc, _ := v["vanna_conditioned"].(map[string]interface{})
+	if _, ok := vc["outlook"].(string); !ok {
+		t.Error("vanna_conditioned.outlook missing")
+	}
+	if _, ok := vc["interpretation"].(string); !ok {
+		t.Error("vanna_conditioned.interpretation missing")
+	}
+
+	// ── regime — net_gex lives HERE ──
+	reg, _ := v["regime"].(map[string]interface{})
+	if _, ok := reg["gamma"].(string); !ok {
+		t.Error("regime.gamma missing")
+	}
+	// vrp_regime: nullable on historical
+	if _, present := reg["vrp_regime"]; !present {
+		t.Error("regime.vrp_regime key missing")
+	}
+	if _, ok := reg["net_gex"].(float64); !ok {
+		t.Error("regime.net_gex missing")
+	}
+	if _, ok := reg["gamma_flip"].(float64); !ok {
+		t.Error("regime.gamma_flip missing")
+	}
+
+	// ── macro (historical-specific shape) ──
 	macro, _ := v["macro"].(map[string]interface{})
-	if got, _ := macro["hy_spread"].(float64); got != 3.5 {
-		t.Errorf("hy_spread=%v, want 3.5", macro["hy_spread"])
+	for _, k := range []string{"vix", "vix_3m", "vix_term_slope", "dgs10", "hy_spread"} {
+		if _, ok := macro[k].(float64); !ok {
+			t.Errorf("macro.%s missing/non-number", k)
+		}
+	}
+	// fed_funds is live-only — must NOT be present on historical
+	if _, ok := macro["fed_funds"]; ok {
+		t.Error("macro.fed_funds must NOT exist on historical")
 	}
 }
 
