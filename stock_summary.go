@@ -158,7 +158,7 @@ type StockSummaryExposure struct {
 	// HighestOiStrike is the strike with the largest total OI.
 	HighestOiStrike *float64 `json:"highest_oi_strike"`
 	// Regime is the dealer-positioning classifier:
-	//   "positive_gamma" | "negative_gamma" | "undetermined"
+	//   "positive_gamma" | "negative_gamma" | "unknown"
 	Regime string `json:"regime"`
 	// Interpretation holds the verbal Greek-regime narratives — safe to surface verbatim.
 	Interpretation *StockSummaryInterpretation `json:"interpretation"`

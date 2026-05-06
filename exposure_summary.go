@@ -36,11 +36,9 @@ type ExposureSummaryResponse struct {
 	// flip = positive-gamma regime (mean-reversion). Spot BELOW = negative-
 	// gamma regime (trend amplification).
 	GammaFlip *float64 `json:"gamma_flip"`
-	// Dealer-positioning regime classifier. Confirmed live values across all
-	// 5 SDK integration test suites:
-	//   "positive_gamma" | "negative_gamma" | "neutral"
-	// Documented fourth: "undetermined" (no usable options data). "neutral"
-	// appears in edge cases where net_gex straddles zero.
+	// Dealer-positioning regime classifier. Confirmed values:
+	//   "positive_gamma" | "negative_gamma" | "unknown"
+	// "unknown" is returned when there's no gamma flip / no usable options data.
 	Regime string `json:"regime"`
 	// Net Greek totals across the entire chain. See ExposureSummaryExposures.
 	Exposures *ExposureSummaryExposures `json:"exposures"`

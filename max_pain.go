@@ -42,7 +42,7 @@ type MaxPainResponse struct {
 	MaxPainByExpiration []MaxPainByExpirationRow `json:"max_pain_by_expiration"`
 	// GEX-based dealer alignment overlay.
 	DealerAlignment *MaxPainDealerAlignment `json:"dealer_alignment"`
-	// "positive_gamma" | "negative_gamma" | "neutral" | "undetermined".
+	// "positive_gamma" | "negative_gamma" | "unknown".
 	Regime *string `json:"regime"`
 	// Expected move from the ATM straddle, contextualized vs max pain.
 	ExpectedMove *MaxPainExpectedMove `json:"expected_move"`
