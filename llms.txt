@@ -1,0 +1,62 @@
+# flashalpha-historical-go
+
+> Official Go SDK for the [FlashAlpha](https://flashalpha.com) **Historical API** — point-in-time replay of every live FlashAlpha analytics endpoint, minute-by-minute back to 2018-04-16. Same response shapes as the live API, plus an `at=` query parameter on every analytics call. Use this SDK to backtest dealer-flow strategies, replay narrative summaries, or train models on historical GEX / VRP / 0DTE data.
+
+The Historical API answers questions like: "What did SPY's gamma flip look like at 15:30 ET on 2020-03-16?" or "Replay the variance risk premium for QQQ every 15 minutes during the 2024 election week." Every method takes a required `at` value (string in ET wall-clock time, or a `time.Time` formatted via `FormatAt`) and returns the same payload shape as the corresponding live endpoint at that historical moment.
+
+- **Install:** `go get github.com/FlashAlpha-lab/flashalpha-historical-go` (Go 1.21+, no external deps)
+- **Live SDK:** `go get github.com/FlashAlpha-lab/flashalpha-go` — identical method names + shapes, no `at=` parameter
+- **Sign up & API keys:** [https://flashalpha.com](https://flashalpha.com)
+- **Interactive playground:** [https://lab.flashalpha.com/swagger](https://lab.flashalpha.com/swagger)
+
+The same `X-Api-Key` you use for the live API works here. The historical API requires an **Alpha plan or higher** on every endpoint.
+
+## Key endpoints
+
+- `Gex / Dex / Vex / Chex(ctx, symbol, at, ...)` — per-strike gamma / delta / vanna / charm exposure at the historical minute.
+- `ExposureSummary(ctx, symbol, at)` — net dealer Greeks, gamma flip, hedging estimates, 0DTE attribution, regime narrative.
+- `ZeroDte(ctx, symbol, at, ...)` — same-day-expiry analytics: regime, expected move, pin risk, dealer hedging flow at multiple move sizes, decay, vol context.
+- `MaxPain(ctx, symbol, at, ...)` — max-pain strike, pain curve, OI breakdown, dealer-alignment overlay, pin probability.
+- `Narrative(ctx, symbol, at)` — server-authored verbal summary at the historical minute. Strings safe to surface verbatim.
+- `ExposureLevels(ctx, symbol, at)` — compact key-level view (gamma flip, walls, magnet) at the historical minute.
+- `StockSummary(ctx, symbol, at)` — composite snapshot: price, volatility, options flow, dealer exposure, macro context.
+- `Vrp(ctx, symbol, at)` — variance risk premium with date-bounded percentiles. `at` near the dataset start (2018-04-16) returns nil percentile/z-score with explanatory warnings.
+- `Volatility / AdvVolatility(ctx, symbol, at)` — IV ladder, skew, term structure, SVI calibration.
+- `StockQuote / OptionQuote / Surface(ctx, ..., at)` — minute-resolution quotes and surfaces.
+
+## Backtesting helpers
+
+The package ships `Backtester`, `Replay`, `IterDays`, and `IterMinutes` for sweeping the same endpoint across a date or minute grid — perfect for AI agents building reproducible backtests.
+
+```go
+ctx := context.Background()
+c := fh.NewClient(os.Getenv("FLASHALPHA_API_KEY"))
+
+bt := fh.NewBacktester(c)
+bt.Endpoint = fh.EndpointStockSummary
+bt.Symbol   = "SPY"
+
+start, _ := time.Parse(fh.AtFormatDate, "2024-01-02")
+end,   _ := time.Parse(fh.AtFormatDate, "2024-03-29")
+
+results, err := bt.Run(ctx, fh.IterDays(start, end), func(at string, snap map[string]interface{}) interface{} {
+    vol, _ := snap["volatility"].(map[string]interface{})
+    return map[string]interface{}{ "vrp": vol["vrp"] }
+})
+```
+
+## Tier breakdown
+
+The Historical API requires an **Alpha plan or higher** on every endpoint — there is no Free or Growth tier. Sign up at [flashalpha.com](https://flashalpha.com).
+
+## Authentication
+
+```go
+c := fh.NewClient(os.Getenv("FLASHALPHA_API_KEY"))
+```
+
+## Documentation
+
+- [README](README.md) — full method tables, examples, error types
+- [Interactive Swagger playground](https://lab.flashalpha.com/swagger)
+- [FlashAlpha docs](https://flashalpha.com/docs)
