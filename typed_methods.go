@@ -251,3 +251,23 @@ func (c *Client) ChexTyped(ctx context.Context, symbol, at string, opts ...Optio
 	}
 	return out, nil
 }
+
+// ZeroDteTyped is the strongly-typed variant of ZeroDte. The original
+// ZeroDte continues to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *ZeroDteResponse with the Raw payload attached
+// for any field not yet modeled. On weekends/holidays / no-0DTE days,
+// NoZeroDte is true and only Symbol, AsOf, Message, and NextZeroDteExpiry
+// are populated.
+func (c *Client) ZeroDteTyped(ctx context.Context, symbol, at string, opts ...Option) (*ZeroDteResponse, error) {
+	raw, err := c.ZeroDte(ctx, symbol, at, opts...)
+	if err != nil {
+		return nil, err
+	}
+	out := &ZeroDteResponse{}
+	if err := decodeTyped("zero-dte", raw, out); err != nil {
+		return nil, err
+	}
+	out.Raw = raw
+	return out, nil
+}
