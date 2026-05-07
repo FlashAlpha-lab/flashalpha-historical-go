@@ -132,3 +132,122 @@ func (c *Client) ExposureSummaryTyped(ctx context.Context, symbol, at string) (*
 	}
 	return out, nil
 }
+
+// VolatilityTyped is the strongly-typed variant of Volatility. The original
+// Volatility continues to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *VolatilityResponse for the given symbol at the
+// requested historical minute.
+func (c *Client) VolatilityTyped(ctx context.Context, symbol, at string) (*VolatilityResponse, error) {
+	raw, err := c.Volatility(ctx, symbol, at)
+	if err != nil {
+		return nil, err
+	}
+	out := &VolatilityResponse{}
+	if err := decodeTyped("volatility", raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AdvVolatilityTyped is the strongly-typed variant of AdvVolatility. The
+// original AdvVolatility continues to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *AdvVolatilityResponse for the given symbol at
+// the requested historical minute.
+func (c *Client) AdvVolatilityTyped(ctx context.Context, symbol, at string) (*AdvVolatilityResponse, error) {
+	raw, err := c.AdvVolatility(ctx, symbol, at)
+	if err != nil {
+		return nil, err
+	}
+	out := &AdvVolatilityResponse{}
+	if err := decodeTyped("adv volatility", raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SurfaceTyped is the strongly-typed variant of Surface. The original
+// Surface continues to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *SurfaceResponse for the given symbol at the
+// requested historical minute.
+func (c *Client) SurfaceTyped(ctx context.Context, symbol, at string) (*SurfaceResponse, error) {
+	raw, err := c.Surface(ctx, symbol, at)
+	if err != nil {
+		return nil, err
+	}
+	out := &SurfaceResponse{}
+	if err := decodeTyped("surface", raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GexTyped is the strongly-typed variant of Gex. The original Gex continues
+// to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *GexResponse for the given symbol at the
+// requested historical minute.
+func (c *Client) GexTyped(ctx context.Context, symbol, at string, opts ...Option) (*GexResponse, error) {
+	raw, err := c.Gex(ctx, symbol, at, opts...)
+	if err != nil {
+		return nil, err
+	}
+	out := &GexResponse{}
+	if err := decodeTyped("gex", raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DexTyped is the strongly-typed variant of Dex. The original Dex continues
+// to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *DexResponse for the given symbol at the
+// requested historical minute.
+func (c *Client) DexTyped(ctx context.Context, symbol, at string, opts ...Option) (*DexResponse, error) {
+	raw, err := c.Dex(ctx, symbol, at, opts...)
+	if err != nil {
+		return nil, err
+	}
+	out := &DexResponse{}
+	if err := decodeTyped("dex", raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VexTyped is the strongly-typed variant of Vex. The original Vex continues
+// to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *VexResponse for the given symbol at the
+// requested historical minute.
+func (c *Client) VexTyped(ctx context.Context, symbol, at string, opts ...Option) (*VexResponse, error) {
+	raw, err := c.Vex(ctx, symbol, at, opts...)
+	if err != nil {
+		return nil, err
+	}
+	out := &VexResponse{}
+	if err := decodeTyped("vex", raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ChexTyped is the strongly-typed variant of Chex. The original Chex
+// continues to return map[string]interface{} unchanged.
+//
+// Returns a fully-populated *ChexResponse for the given symbol at the
+// requested historical minute.
+func (c *Client) ChexTyped(ctx context.Context, symbol, at string, opts ...Option) (*ChexResponse, error) {
+	raw, err := c.Chex(ctx, symbol, at, opts...)
+	if err != nil {
+		return nil, err
+	}
+	out := &ChexResponse{}
+	if err := decodeTyped("chex", raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
