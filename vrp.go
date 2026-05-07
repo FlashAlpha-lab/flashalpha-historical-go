@@ -180,7 +180,7 @@ type VrpVannaConditioned struct {
 // Customers often expect response.NetGex (top-level) — that's a nil pointer.
 // Use response.Regime.NetGex.
 type VrpRegime struct {
-	// "positive_gamma" | "negative_gamma" | "neutral" | "undetermined".
+	// "positive_gamma" | "negative_gamma" | "unknown".
 	Gamma *string `json:"gamma"`
 	// "harvestable" | "selling_too_cheap" | "buying_too_cheap" | "neutral" etc.
 	// nil on historical with insufficient warmup.

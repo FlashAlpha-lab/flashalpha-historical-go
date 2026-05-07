@@ -26,12 +26,13 @@ package flashalphahistorical
 //   instead — don't conflate them.
 
 // StockSummaryResponse is the typed body of GET /v1/stock/{symbol}/summary?at=...
+//
+// There is NO top-level underlying-price field on this endpoint — the
+// reference spot at the as-of minute is Price.Mid (the NBBO mid). All
+// dollar-denominated fields below are dollarised against that.
 type StockSummaryResponse struct {
 	// Symbol is the underlying ticker echoed from the request path.
 	Symbol string `json:"symbol"`
-	// UnderlyingPrice is the spot mid in dollars at the as-of minute — the
-	// reference price for all dollar-denominated fields below.
-	UnderlyingPrice *float64 `json:"underlying_price"`
 	// AsOf is the ET wall-clock timestamp the API actually used (snapped to
 	// the available minute — may differ from the requested `at` value when
 	// the request lands inside a gap).
@@ -273,13 +274,13 @@ type StockSummaryVixTermStructure struct {
 // StockSummaryVixTermLevels is the VIX9D / VIX / VIX3M / VIX6M tenor levels.
 type StockSummaryVixTermLevels struct {
 	// Vix9d is CBOE VIX9D.
-	Vix9d *float64 `json:"vix_9d"`
+	Vix9d *float64 `json:"vix9d"`
 	// Vix is CBOE VIX.
 	Vix *float64 `json:"vix"`
 	// Vix3m is CBOE VIX3M.
-	Vix3m *float64 `json:"vix_3m"`
+	Vix3m *float64 `json:"vix3m"`
 	// Vix6m is CBOE VIX6M.
-	Vix6m *float64 `json:"vix_6m"`
+	Vix6m *float64 `json:"vix6m"`
 }
 
 // StockSummaryVixFutures is the VIX-futures basis block.

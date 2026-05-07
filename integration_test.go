@@ -33,7 +33,7 @@ const (
 )
 
 var regimes = map[string]struct{}{
-	"positive_gamma": {}, "negative_gamma": {}, "neutral": {}, "undetermined": {},
+	"positive_gamma": {}, "negative_gamma": {}, "unknown": {},
 }
 
 // ── coverage ────────────────────────────────────────────────────────────────
@@ -668,7 +668,7 @@ func TestMaxPain_EveryFieldDeclaredInPocoMustBeReferenced(t *testing.T) {
 		t.Error("Regime nil")
 	} else {
 		switch *r.Regime {
-		case "positive_gamma", "negative_gamma", "neutral", "undetermined":
+		case "positive_gamma", "negative_gamma", "unknown":
 		default:
 			t.Errorf("Regime=%q", *r.Regime)
 		}
@@ -943,6 +943,389 @@ func TestIntegrationBacktester(t *testing.T) {
 		regime, _ := out["regime"].(string)
 		if _, ok := regimes[regime]; !ok {
 			t.Errorf("unknown regime %q at %s", regime, r.At)
+		}
+	}
+}
+
+// ── rc.4 typed-POCO field-walk tests ─────────────────────────────────────────
+//
+// Each test below decodes the historical raw response into the canonical typed
+// POCO and asserts every exported pointer field on a SPY response at spyAt is
+// non-nil (modulo documented nullable / historical-mode-gap fields).
+
+// TestIntegrationStockSummary_EveryFieldDeclaredInPocoMustBeReferenced —
+// 100% field-coverage walk against StockSummaryResponse on SPY @ spyAt.
+//
+// Historical-mode gaps that are intentionally NOT asserted non-nil:
+//   - OptionsFlow.TotalCallVolume / TotalPutVolume / PcRatioVolume
+//     (volumes are always 0/nil on historical — documented backtest_mode gap)
+//   - Macro.VixFutures / Macro.FearAndGreed (live-only feeds)
+//   - StockSummarySkew25d.* (skew fitter best-effort at the as-of minute)
+func TestIntegrationStockSummary_EveryFieldDeclaredInPocoMustBeReferenced(t *testing.T) {
+	c, ctx := integrationClient(t)
+	raw, err := c.StockSummary(ctx, "SPY", spyAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatalf("re-encode: %v", err)
+	}
+	r := &StockSummaryResponse{}
+	if err := json.Unmarshal(buf, r); err != nil {
+		t.Fatalf("decode into StockSummaryResponse: %v", err)
+	}
+
+	// ── top-level scalars ──
+	if r.Symbol != "SPY" {
+		t.Errorf("Symbol=%q", r.Symbol)
+	}
+	if r.AsOf == "" {
+		t.Error("AsOf empty")
+	}
+	_ = r.MarketOpen
+
+	// ── Price ──
+	if r.Price == nil {
+		t.Fatal("Price nil")
+	}
+	if r.Price.Bid == nil {
+		t.Error("Price.Bid nil")
+	}
+	if r.Price.Ask == nil {
+		t.Error("Price.Ask nil")
+	}
+	if r.Price.Mid == nil || *r.Price.Mid <= 0 {
+		t.Errorf("Price.Mid=%v (canonical reference price)", r.Price.Mid)
+	}
+	if r.Price.Last == nil {
+		t.Error("Price.Last nil")
+	}
+	if r.Price.LastUpdate == nil {
+		t.Error("Price.LastUpdate nil")
+	}
+
+	// ── Volatility ──
+	if r.Volatility == nil {
+		t.Fatal("Volatility nil")
+	}
+	if r.Volatility.AtmIv == nil {
+		t.Error("Volatility.AtmIv nil")
+	}
+	if r.Volatility.Hv20 == nil {
+		t.Error("Volatility.Hv20 nil")
+	}
+	if r.Volatility.Hv60 == nil {
+		t.Error("Volatility.Hv60 nil")
+	}
+	if r.Volatility.Vrp == nil {
+		t.Error("Volatility.Vrp nil")
+	}
+	_ = r.Volatility.Skew25d
+	if len(r.Volatility.IvTermStructure) == 0 {
+		t.Error("Volatility.IvTermStructure empty")
+	} else {
+		p := r.Volatility.IvTermStructure[0]
+		if p.Expiry == nil {
+			t.Error("IvTermStructure[0].Expiry nil")
+		}
+		if p.Iv == nil {
+			t.Error("IvTermStructure[0].Iv nil")
+		}
+		if p.DaysToExpiry == nil {
+			t.Error("IvTermStructure[0].DaysToExpiry nil")
+		}
+	}
+
+	// ── OptionsFlow (volumes are 0/nil on historical) ──
+	if r.OptionsFlow == nil {
+		t.Fatal("OptionsFlow nil")
+	}
+	if r.OptionsFlow.TotalCallOi == nil {
+		t.Error("OptionsFlow.TotalCallOi nil")
+	}
+	if r.OptionsFlow.TotalPutOi == nil {
+		t.Error("OptionsFlow.TotalPutOi nil")
+	}
+	if r.OptionsFlow.PcRatioOi == nil {
+		t.Error("OptionsFlow.PcRatioOi nil")
+	}
+	if r.OptionsFlow.ActiveExpirations == nil {
+		t.Error("OptionsFlow.ActiveExpirations nil")
+	}
+	// Volume fields documented-zero on historical — just reference them.
+	_ = r.OptionsFlow.TotalCallVolume
+	_ = r.OptionsFlow.TotalPutVolume
+	_ = r.OptionsFlow.PcRatioVolume
+
+	// ── Exposure ──
+	if r.Exposure == nil {
+		t.Fatal("Exposure nil")
+	}
+	for label, ptr := range map[string]*float64{
+		"NetGex":          r.Exposure.NetGex,
+		"NetDex":          r.Exposure.NetDex,
+		"NetVex":          r.Exposure.NetVex,
+		"NetChex":         r.Exposure.NetChex,
+		"GammaFlip":       r.Exposure.GammaFlip,
+		"CallWall":        r.Exposure.CallWall,
+		"PutWall":         r.Exposure.PutWall,
+		"MaxPain":         r.Exposure.MaxPain,
+		"HighestOiStrike": r.Exposure.HighestOiStrike,
+		"OiWeightedDte":   r.Exposure.OiWeightedDte,
+	} {
+		if ptr == nil {
+			t.Errorf("Exposure.%s nil", label)
+		}
+	}
+	switch r.Exposure.Regime {
+	case "positive_gamma", "negative_gamma", "unknown":
+	default:
+		t.Errorf("Exposure.Regime=%q", r.Exposure.Regime)
+	}
+	if r.Exposure.Interpretation == nil {
+		t.Error("Exposure.Interpretation nil")
+	} else {
+		if r.Exposure.Interpretation.Gamma == "" {
+			t.Error("Exposure.Interpretation.Gamma empty")
+		}
+		if r.Exposure.Interpretation.Vanna == "" {
+			t.Error("Exposure.Interpretation.Vanna empty")
+		}
+		if r.Exposure.Interpretation.Charm == "" {
+			t.Error("Exposure.Interpretation.Charm empty")
+		}
+	}
+	if r.Exposure.HedgingEstimate == nil {
+		t.Fatal("Exposure.HedgingEstimate nil")
+	}
+	for label, side := range map[string]*StockSummaryHedgingMove{
+		"SpotUp1Pct":   r.Exposure.HedgingEstimate.SpotUp1Pct,
+		"SpotDown1Pct": r.Exposure.HedgingEstimate.SpotDown1Pct,
+	} {
+		if side == nil {
+			t.Errorf("HedgingEstimate.%s nil", label)
+			continue
+		}
+		if side.DealerShares == nil {
+			t.Errorf("HedgingEstimate.%s.DealerShares nil", label)
+		}
+		if side.Direction != "buy" && side.Direction != "sell" {
+			t.Errorf("HedgingEstimate.%s.Direction=%q", label, side.Direction)
+		}
+		if side.NotionalUsd == nil {
+			t.Errorf("HedgingEstimate.%s.NotionalUsd nil", label)
+		}
+	}
+	_ = r.Exposure.ZeroDte
+	if len(r.Exposure.TopStrikes) == 0 {
+		t.Error("Exposure.TopStrikes empty")
+	} else {
+		ts := r.Exposure.TopStrikes[0]
+		if ts.Strike == nil {
+			t.Error("TopStrikes[0].Strike nil")
+		}
+		if ts.NetGex == nil {
+			t.Error("TopStrikes[0].NetGex nil")
+		}
+		if ts.CallOi == nil {
+			t.Error("TopStrikes[0].CallOi nil")
+		}
+		if ts.PutOi == nil {
+			t.Error("TopStrikes[0].PutOi nil")
+		}
+		if ts.TotalOi == nil {
+			t.Error("TopStrikes[0].TotalOi nil")
+		}
+	}
+
+	// ── Macro (VixFutures + FearAndGreed nil on historical) ──
+	if r.Macro == nil {
+		t.Fatal("Macro nil")
+	}
+	checkQuote := func(name string, q *StockSummaryMacroQuote) {
+		t.Helper()
+		if q == nil {
+			t.Errorf("Macro.%s nil", name)
+			return
+		}
+		if q.Value == nil {
+			t.Errorf("Macro.%s.Value nil", name)
+		}
+	}
+	checkQuote("Vix", r.Macro.Vix)
+	checkQuote("Vvix", r.Macro.Vvix)
+	checkQuote("Skew", r.Macro.Skew)
+	checkQuote("Spx", r.Macro.Spx)
+	checkQuote("Move", r.Macro.Move)
+	if r.Macro.VixTermStructure == nil {
+		t.Fatal("Macro.VixTermStructure nil")
+	}
+	if r.Macro.VixTermStructure.Levels == nil {
+		t.Fatal("Macro.VixTermStructure.Levels nil")
+	}
+	for label, ptr := range map[string]*float64{
+		"Vix9d": r.Macro.VixTermStructure.Levels.Vix9d,
+		"Vix":   r.Macro.VixTermStructure.Levels.Vix,
+		"Vix3m": r.Macro.VixTermStructure.Levels.Vix3m,
+		"Vix6m": r.Macro.VixTermStructure.Levels.Vix6m,
+	} {
+		if ptr == nil {
+			t.Errorf("VixTermStructure.Levels.%s nil (silent-null trap if json tag drifted)", label)
+		}
+	}
+	if r.Macro.VixTermStructure.NearSlopePct == nil {
+		t.Error("Macro.VixTermStructure.NearSlopePct nil")
+	}
+	if r.Macro.VixTermStructure.Structure == nil {
+		t.Error("Macro.VixTermStructure.Structure nil")
+	}
+	// VixFutures + FearAndGreed are live-only — historical returns nil.
+	_ = r.Macro.VixFutures
+	_ = r.Macro.FearAndGreed
+}
+
+// TestIntegrationNarrative_EveryFieldDeclaredInPocoMustBeReferenced —
+// 100% field-coverage walk against NarrativeResponse on SPY @ spyAt.
+//
+// Historical-mode: TopOiChanges is documented-empty on historical (no
+// prior-session OI baseline) — only assert shape when populated.
+func TestIntegrationNarrative_EveryFieldDeclaredInPocoMustBeReferenced(t *testing.T) {
+	c, ctx := integrationClient(t)
+	raw, err := c.Narrative(ctx, "SPY", spyAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatalf("re-encode: %v", err)
+	}
+	r := &NarrativeResponse{}
+	if err := json.Unmarshal(buf, r); err != nil {
+		t.Fatalf("decode into NarrativeResponse: %v", err)
+	}
+
+	if r.Symbol != "SPY" {
+		t.Errorf("Symbol=%q", r.Symbol)
+	}
+	if r.UnderlyingPrice == nil || *r.UnderlyingPrice <= 0 {
+		t.Errorf("UnderlyingPrice=%v", r.UnderlyingPrice)
+	}
+	if r.AsOf == "" {
+		t.Error("AsOf empty")
+	}
+	if r.Narrative == nil {
+		t.Fatal("Narrative nil")
+	}
+	for label, s := range map[string]string{
+		"Regime":    r.Narrative.Regime,
+		"GexChange": r.Narrative.GexChange,
+		"KeyLevels": r.Narrative.KeyLevels,
+		"Flow":      r.Narrative.Flow,
+		"Vanna":     r.Narrative.Vanna,
+		"Charm":     r.Narrative.Charm,
+		"ZeroDte":   r.Narrative.ZeroDte,
+		"Outlook":   r.Narrative.Outlook,
+	} {
+		if s == "" {
+			t.Errorf("Narrative.%s empty", label)
+		}
+	}
+	if r.Narrative.Data == nil {
+		t.Fatal("Narrative.Data nil")
+	}
+	d := r.Narrative.Data
+	if d.NetGex == nil {
+		t.Error("Data.NetGex nil")
+	}
+	if d.NetGexPrior == nil {
+		t.Error("Data.NetGexPrior nil")
+	}
+	if d.NetGexChangePct == nil {
+		t.Error("Data.NetGexChangePct nil")
+	}
+	if d.Vix == nil {
+		t.Error("Data.Vix nil")
+	}
+	if d.GammaFlip == nil {
+		t.Error("Data.GammaFlip nil")
+	}
+	if d.CallWall == nil {
+		t.Error("Data.CallWall nil")
+	}
+	if d.PutWall == nil {
+		t.Error("Data.PutWall nil")
+	}
+	switch d.Regime {
+	case "positive_gamma", "negative_gamma", "unknown":
+	default:
+		t.Errorf("Data.Regime=%q", d.Regime)
+	}
+	if d.ZeroDtePct == nil {
+		t.Error("Data.ZeroDtePct nil")
+	}
+	// TopOiChanges documented-empty on historical — only walk fields if any.
+	if len(d.TopOiChanges) > 0 {
+		row := d.TopOiChanges[0]
+		if row.Strike == nil {
+			t.Error("TopOiChanges[0].Strike nil")
+		}
+		if row.Type != "call" && row.Type != "put" {
+			t.Errorf("TopOiChanges[0].Type=%q", row.Type)
+		}
+		if row.OiChange == nil {
+			t.Error("TopOiChanges[0].OiChange nil")
+		}
+		if row.Volume == nil {
+			t.Error("TopOiChanges[0].Volume nil")
+		}
+	}
+}
+
+// TestIntegrationLevels_EveryFieldDeclaredInPocoMustBeReferenced —
+// 100% field-coverage walk against LevelsResponse on SPY @ spyAt. ZeroDteMagnet
+// is asserted non-nil specifically — 2024-08-05 is a Monday and SPY had a
+// 0DTE chain at 15:30 ET.
+func TestIntegrationLevels_EveryFieldDeclaredInPocoMustBeReferenced(t *testing.T) {
+	c, ctx := integrationClient(t)
+	raw, err := c.ExposureLevels(ctx, "SPY", spyAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatalf("re-encode: %v", err)
+	}
+	r := &LevelsResponse{}
+	if err := json.Unmarshal(buf, r); err != nil {
+		t.Fatalf("decode into LevelsResponse: %v", err)
+	}
+
+	if r.Symbol != "SPY" {
+		t.Errorf("Symbol=%q", r.Symbol)
+	}
+	if r.UnderlyingPrice == nil || *r.UnderlyingPrice <= 0 {
+		t.Errorf("UnderlyingPrice=%v", r.UnderlyingPrice)
+	}
+	if r.AsOf == "" {
+		t.Error("AsOf empty")
+	}
+	if r.Levels == nil {
+		t.Fatal("Levels nil")
+	}
+	for label, ptr := range map[string]*float64{
+		"GammaFlip":        r.Levels.GammaFlip,
+		"MaxPositiveGamma": r.Levels.MaxPositiveGamma,
+		"MaxNegativeGamma": r.Levels.MaxNegativeGamma,
+		"CallWall":         r.Levels.CallWall,
+		"PutWall":          r.Levels.PutWall,
+		"HighestOiStrike":  r.Levels.HighestOiStrike,
+		// ZeroDteMagnet — most SDKs miss this assertion. SPY @ 2024-08-05
+		// 15:30 ET had 0DTE active.
+		"ZeroDteMagnet": r.Levels.ZeroDteMagnet,
+	} {
+		if ptr == nil {
+			t.Errorf("Levels.%s nil", label)
 		}
 	}
 }
