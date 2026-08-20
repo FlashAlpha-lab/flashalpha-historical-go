@@ -6,7 +6,7 @@ package flashalphahistorical
 //   - HySpread: populated on historical (live currently returns nil).
 //   - FedFunds: absent on historical (this struct omits it; live includes it).
 //
-// On historical responses with insufficient warm-up (`at` near 2018-04-16),
+// On historical responses with insufficient warm-up (`at` near 2017-01-03),
 // Vrp.ZScore, Vrp.Percentile, Regime.VrpRegime, StrategyScores, and
 // NetHarvestScore are all nil. Warnings will explain.
 //
@@ -100,7 +100,7 @@ type VrpCore struct {
 	Vrp30d *float64 `json:"vrp_30d"`
 	// Z-score of current 20-day VRP vs trailing window. +2.0 = unusually
 	// rich (often a fade signal). nil when warmup is insufficient (close
-	// to 2018-04-16, the dataset start).
+	// to 2017-01-03, the dataset start).
 	ZScore *float64 `json:"z_score"`
 	// Percentile rank (0-100) within the trailing window. 100 = highest
 	// VRP in living memory; 0 = lowest. nil when warmup is short.
