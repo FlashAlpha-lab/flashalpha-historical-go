@@ -349,6 +349,8 @@ type ZeroDteStrike struct {
 //
 // Raw holds the underlying decoded JSON for any field not modeled here.
 type ZeroDteResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Symbol is the underlying ticker echoed from the request path.
 	Symbol string `json:"symbol"`
 	// UnderlyingPrice is the spot mid at AsOf.

@@ -22,6 +22,8 @@ package flashalphahistorical
 // the dealer hedging-flow estimate at +/- 1% spot moves, verbal regime
 // narratives, and a 0DTE attribution.
 type ExposureSummaryResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Underlying symbol echoed from the request path (e.g. "SPY").
 	Symbol string `json:"symbol"`
 	// Spot mid at the as-of minute, in dollars. Reference price for all

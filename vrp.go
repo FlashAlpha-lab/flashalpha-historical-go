@@ -30,6 +30,8 @@ package flashalphahistorical
 // (VannaConditioned), regime snapshot (Regime), strategy scores
 // (StrategyScores), and macro context (Macro) are deliberately separated.
 type VrpResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Echoed from the request path.
 	Symbol string `json:"symbol"`
 	// Spot mid at the as-of minute.
