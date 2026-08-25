@@ -17,7 +17,7 @@ type DataAsOf struct {
 	EquityFeed *string `json:"equity_feed"`
 	// EquityOptionsFeed covers equity and ETF option quotes.
 	EquityOptionsFeed *string `json:"equity_options_feed"`
-	// IndexFeed covers index spot - SPX, NDX, RUT, VIX.
+	// IndexFeed covers index spot - SPX, RUT, VIX and the other index roots.
 	IndexFeed *string `json:"index_feed"`
 	// IndexOptionsFeed covers index option quotes.
 	IndexOptionsFeed *string `json:"index_options_feed"`
