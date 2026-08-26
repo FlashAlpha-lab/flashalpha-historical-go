@@ -27,6 +27,8 @@ package flashalphahistorical
 
 // GexResponse is the typed body of GET /v1/exposure/gex/{symbol}?at=...
 type GexResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Symbol is the underlying ticker echoed from the request path.
 	Symbol string `json:"symbol"`
 	// UnderlyingPrice is the spot mid at AsOf.
@@ -73,6 +75,8 @@ type GexStrike struct {
 
 // DexResponse is the typed body of GET /v1/exposure/dex/{symbol}?at=...
 type DexResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Symbol is the underlying ticker echoed from the request path.
 	Symbol string `json:"symbol"`
 	// UnderlyingPrice is the spot mid at AsOf.
@@ -102,6 +106,8 @@ type DexStrike struct {
 
 // VexResponse is the typed body of GET /v1/exposure/vex/{symbol}?at=...
 type VexResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Symbol is the underlying ticker echoed from the request path.
 	Symbol string `json:"symbol"`
 	// UnderlyingPrice is the spot mid at AsOf.
@@ -134,6 +140,8 @@ type VexStrike struct {
 
 // ChexResponse is the typed body of GET /v1/exposure/chex/{symbol}?at=...
 type ChexResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Symbol is the underlying ticker echoed from the request path.
 	Symbol string `json:"symbol"`
 	// UnderlyingPrice is the spot mid at AsOf.

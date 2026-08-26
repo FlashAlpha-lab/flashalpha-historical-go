@@ -14,6 +14,8 @@ package flashalphahistorical
 
 // SurfaceResponse is the typed body of GET /v1/surface/{symbol}?at=...
 type SurfaceResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	// Symbol is the underlying ticker echoed from the request path.
 	Symbol string `json:"symbol"`
 	// Spot is the underlying spot reference used to build the surface.

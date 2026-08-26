@@ -20,6 +20,8 @@ package flashalphahistorical
 
 // MaxPainResponse is the typed body of GET /v1/maxpain/{symbol}?at=...
 type MaxPainResponse struct {
+	// ResponseEnvelope carries data_as_of, archive_as_of and endpoint_version.
+	ResponseEnvelope
 	Symbol          string   `json:"symbol"`
 	UnderlyingPrice *float64 `json:"underlying_price"`
 	AsOf            string   `json:"as_of"`
