@@ -25,6 +25,10 @@ type ZeroDteRegime struct {
 	// GammaFlip is the strike where 0DTE net dealer gamma exposure crosses
 	// zero. The single most-watched intraday level on this endpoint.
 	GammaFlip *float64 `json:"gamma_flip"`
+	// GammaFlipStatus reads "available" when a flip level is published,
+	// otherwise a reason code for why it was withheld (e.g. "no_boundary",
+	// "insufficient_local_coverage"). Treat unknown values as unavailable.
+	GammaFlipStatus *string `json:"gamma_flip_status"`
 	// SpotVsFlip is "above" or "below" — convenience label matching the sign
 	// of (underlying_price - gamma_flip).
 	SpotVsFlip string `json:"spot_vs_flip"`

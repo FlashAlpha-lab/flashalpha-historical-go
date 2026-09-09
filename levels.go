@@ -28,6 +28,10 @@ type LevelsResponse struct {
 type LevelsBlock struct {
 	// GammaFlip is the strike where net dealer gamma crosses zero.
 	GammaFlip *float64 `json:"gamma_flip"`
+	// GammaFlipStatus reads "available" when a flip level is published,
+	// otherwise a reason code for why it was withheld (e.g. "no_boundary",
+	// "insufficient_local_coverage"). Treat unknown values as unavailable.
+	GammaFlipStatus *string `json:"gamma_flip_status"`
 	// MaxPositiveGamma is the strike with the largest positive net GEX.
 	MaxPositiveGamma *float64 `json:"max_positive_gamma"`
 	// MaxNegativeGamma is the strike with the largest negative net GEX.

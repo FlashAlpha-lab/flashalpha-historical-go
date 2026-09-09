@@ -192,6 +192,10 @@ type VrpRegime struct {
 	NetGex *float64 `json:"net_gex"`
 	// Strike where net dealer gamma crosses zero.
 	GammaFlip *float64 `json:"gamma_flip"`
+	// GammaFlipStatus reads "available" when a flip level is published,
+	// otherwise a reason code for why it was withheld (e.g. "no_boundary",
+	// "insufficient_local_coverage"). Treat unknown values as unavailable.
+	GammaFlipStatus *string `json:"gamma_flip_status"`
 }
 
 // VrpStrategyScores holds 0-100 suitability scores for canonical short-vol

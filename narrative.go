@@ -59,6 +59,10 @@ type NarrativeData struct {
 	Vix *float64 `json:"vix"`
 	// GammaFlip is the strike where net dealer gamma crosses zero.
 	GammaFlip *float64 `json:"gamma_flip"`
+	// GammaFlipStatus reads "available" when a flip level is published,
+	// otherwise a reason code for why it was withheld (e.g. "no_boundary",
+	// "insufficient_local_coverage"). Treat unknown values as unavailable.
+	GammaFlipStatus *string `json:"gamma_flip_status"`
 	// CallWall is the strike with the largest absolute call GEX.
 	CallWall *float64 `json:"call_wall"`
 	// PutWall is the strike with the largest absolute put GEX.

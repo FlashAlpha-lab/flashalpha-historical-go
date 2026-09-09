@@ -37,6 +37,10 @@ type GexResponse struct {
 	AsOf string `json:"as_of"`
 	// GammaFlip is the strike where net dealer gamma crosses zero.
 	GammaFlip *float64 `json:"gamma_flip"`
+	// GammaFlipStatus reads "available" when a flip level is published,
+	// otherwise a reason code for why it was withheld (e.g. "no_boundary",
+	// "insufficient_local_coverage"). Treat unknown values as unavailable.
+	GammaFlipStatus *string `json:"gamma_flip_status"`
 	// NetGex is the chain-wide net dealer gamma in dollars per 1% spot move.
 	NetGex *float64 `json:"net_gex"`
 	// NetGexLabel is a verbal classification of the net regime (e.g.
