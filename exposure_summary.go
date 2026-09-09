@@ -38,6 +38,10 @@ type ExposureSummaryResponse struct {
 	// flip = positive-gamma regime (mean-reversion). Spot BELOW = negative-
 	// gamma regime (trend amplification).
 	GammaFlip *float64 `json:"gamma_flip"`
+	// GammaFlipStatus reads "available" when a flip level is published,
+	// otherwise a reason code for why it was withheld (e.g. "no_boundary",
+	// "insufficient_local_coverage"). Treat unknown values as unavailable.
+	GammaFlipStatus *string `json:"gamma_flip_status"`
 	// Dealer-positioning regime classifier. Confirmed values:
 	//   "positive_gamma" | "negative_gamma" | "unknown"
 	// "unknown" is returned when there's no gamma flip / no usable options data.

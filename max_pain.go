@@ -102,10 +102,11 @@ type MaxPainByExpirationRow struct {
 type MaxPainDealerAlignment struct {
 	Alignment *string `json:"alignment"`
 	// Plain-English explanation. Safe to surface verbatim.
-	Description *string  `json:"description"`
-	GammaFlip   *float64 `json:"gamma_flip"`
-	CallWall    *float64 `json:"call_wall"`
-	PutWall     *float64 `json:"put_wall"`
+	Description     *string  `json:"description"`
+	GammaFlip       *float64 `json:"gamma_flip"`
+	GammaFlipStatus *string  `json:"gamma_flip_status"`
+	CallWall        *float64 `json:"call_wall"`
+	PutWall         *float64 `json:"put_wall"`
 }
 
 // MaxPainExpectedMove is the implied move from the ATM straddle.
