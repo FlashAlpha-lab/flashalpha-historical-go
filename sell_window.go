@@ -51,7 +51,7 @@ type SellWindowWindow struct {
 
 // SellWindowResponse is the sell-window answer. It has its own shape, not the
 // StrategyDecisionResponse envelope. Spot, QuotedAt and LegsIndicative are set when a
-// window sells.
+// window sells and an option chain could be loaded.
 type SellWindowResponse struct {
 	Symbol string `json:"symbol"`
 	// Session (yyyy-MM-dd) is the trading session the answer applies to.
