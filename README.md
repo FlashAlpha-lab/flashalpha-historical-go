@@ -82,6 +82,37 @@ Cut the risk or earn more. Keep your trade size and the deepest drawdown falls 7
 
 *Backtest on SPY, QQQ and IWM, January 2018 to October 2026, at halfway fills and $1 per contract. At one contract set per signal, following it made $945,541 on 20,883 trades; selling every day made $2,321,150 on 56,975. At 3.76 times the contracts, both fell $958,924 at their deepest, and the worst month was -$642,135 against -$307,241. Past results do not guarantee future returns, and short options can lose more than the premium collected. The skip call applies to new trades, so it cannot protect open positions from a sudden shock. This is data, not investment advice.*
 
+## Expiry impact and strike dependency replay (SPY, QQQ)
+
+Replay either calculation at any minute with `at`. A date-only `at` uses 15:55 ET.
+Results are model reconstructions from archived quotes. Requires Alpha or higher.
+
+```go
+client := flashalphahistorical.NewClient("YOUR_API_KEY")
+at := "2026-10-09T15:55:00"
+
+// Exclude the nearest active expiry (or pick one with WithExpiry).
+impact, err := client.ExpiryImpactTyped(ctx, "SPY", at, flashalphahistorical.WithLimit(5))
+if err != nil {
+	log.Fatal(err)
+}
+im := impact.Impact
+if im.RemovedGrossSharePct != nil && im.NetSignChanged != nil {
+	fmt.Printf("%s held %.1f%% of gross gamma; net sign changes without it: %v\n",
+		impact.SelectedExpiry, *im.RemovedGrossSharePct, *im.NetSignChanged)
+}
+
+// The strike must be listed exactly; it is never snapped to a nearby strike.
+level, err := client.StrikeDependencyTyped(ctx, "SPY", at, 670)
+if err != nil {
+	log.Fatal(err)
+}
+if level.DominantExpiry != nil && level.DominantExpirySharePct != nil {
+	fmt.Printf("670: %s held %.1f%% of the gamma at this strike\n",
+		*level.DominantExpiry, *level.DominantExpirySharePct)
+}
+```
+
 ## Data provenance: `data_as_of`
 
 Every successful response carries `data_as_of`, reporting when each upstream feed last
@@ -198,10 +229,12 @@ for _, s := range steps {
 | `AdvVolatility(ctx, s, at)` | `/v1/adv_volatility/{s}` |
 | `Vrp(ctx, s, at)` | `/v1/vrp/{s}` |
 | `SellWindow(ctx, s, at)` / `SellWindowTyped(ctx, s, at)` | `/v1/strategies/sell-window/{s}` |
+| `ExpiryImpact(ctx, s, at, ...Option)` / `ExpiryImpactTyped(ctx, s, at, ...Option)` | `/v1/exposure/expiry-impact/{s}` |
+| `StrikeDependency(ctx, s, at, strike)` / `StrikeDependencyTyped(ctx, s, at, strike)` | `/v1/exposure/strike-dependency/{s}` |
 
 Filter helpers: `WithExpiration("2024-08-09")`, `WithMinOI(100)`,
 `WithExpiry("2024-08-09")`, `WithStrike(520)`, `WithType("C")`,
-`WithStrikeRange(0.05)`.
+`WithStrikeRange(0.05)`, `WithLimit(5)`.
 
 ## Errors (use `errors.As`)
 

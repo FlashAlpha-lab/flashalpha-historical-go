@@ -126,6 +126,8 @@ Several endpoints have typed response models with full doc comments — prefer t
 Currently typed:
 
 - `VrpResponse` — variance risk premium with date-bounded percentiles. Heavy nesting (`resp.Vrp.ZScore`, `resp.Regime.NetGex`, `resp.Directional.DownsideVrp`); silent-null traps documented in the model.
+- `ExpiryImpactResponse` - returned by `client.ExpiryImpactTyped(ctx, symbol, at, ...Option)`. Compares the current SPY or QQQ gamma distribution with the same captured inputs after excluding one expiry. Requires Alpha or higher.
+- `StrikeDependencyResponse` - returned by `client.StrikeDependencyTyped(ctx, symbol, at, strike)`. Attributes the gamma at one exact observed SPY or QQQ strike to its expiries: does the level depend on a single maturity? Requires Alpha or higher.
 - `ExposureSummaryResponse`, `MaxPainResponse`, `StockSummaryResponse`, `NarrativeResponse`, `LevelsResponse` — type definitions in this repo for use with `json.Unmarshal` against the `map[string]interface{}` returned by the corresponding client methods.
 
 Historical-specific quirks already captured in the typed models:
