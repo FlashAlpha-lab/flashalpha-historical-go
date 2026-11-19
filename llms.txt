@@ -52,6 +52,8 @@ https://flashalpha.com/docs/lab-api-overview#response-envelope
 - `Vrp(ctx, symbol, at)` — variance risk premium with date-bounded percentiles. `at` near the dataset start (2017-01-03) returns nil percentile/z-score with explanatory warnings.
 - `Volatility / AdvVolatility(ctx, symbol, at)` — IV ladder, skew, term structure, SVI calibration.
 - `StockQuote / OptionQuote / Surface(ctx, ..., at)` — minute-resolution quotes and surfaces.
+- `ExpiryImpact / ExpiryImpactTyped(ctx, symbol, at, ...)` - Compares the current SPY or QQQ gamma distribution with the same captured inputs after excluding one expiry, replayed at `at` (date-only `at` uses 15:55 ET). Requires Alpha or higher.
+- `StrikeDependency / StrikeDependencyTyped(ctx, symbol, at, strike)` - Attributes the gamma at one exact observed SPY or QQQ strike to its expiries: does the level depend on a single maturity? Replayed at `at`. Requires Alpha or higher.
 
 ## Backtesting helpers
 

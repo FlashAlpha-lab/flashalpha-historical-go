@@ -191,9 +191,15 @@ func WithStrikeRange(x float64) Option {
 	}
 }
 
-// WithExpiry adds an `expiry=YYYY-MM-DD` filter (option_quote).
+// WithExpiry adds an `expiry=YYYY-MM-DD` filter (option_quote). On ExpiryImpact it
+// selects the expiry to exclude.
 func WithExpiry(s string) Option {
 	return func(v url.Values) { v.Set("expiry", s) }
+}
+
+// WithLimit adds a `limit=N` parameter (ExpiryImpact: 1-20 rows, default 5).
+func WithLimit(n int) Option {
+	return func(v url.Values) { v.Set("limit", strconv.Itoa(n)) }
 }
 
 // WithStrike adds a `strike=X` filter (option_quote).
